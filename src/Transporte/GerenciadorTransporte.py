@@ -7,8 +7,6 @@ from src.Util.Arquivos import ArquivoCSV
 class GerenciadorTransporte():
     def __init__(self):
         self.mensagem = Mensagens()
-        # self.nome_arquivo_transporte = nome_arquivo_transporte
-        # self.arquivo_transporte = ArquivoCSV(os.path.join(path_arquivo_transporte, nome_arquivo_transporte))
         self.arquivo_transporte = None
    
     def __cria_linha_info_corrida(self, data, df_info_transporte):
@@ -54,25 +52,47 @@ class GerenciadorTransporte():
             print('Erro ao contabilzar os dados do arquivo. Erro: {}'.format(str(e)))
 
     def __obtem_informacoes_usuario(self):
-        try:
-            self.mensagem._enviaMensagem(self.mensagem.CONST_INICIO_DIARIO) 
-            path_arquivo_transporte = self.mensagem._aguardaEscolha()
-            self.mensagem._enviaMensagem(self.mensagem.CONST_NOME_ARQUIVO) 
-            nome_arquivo_transporte = self.mensagem._aguardaEscolha()
-            self.arquivo_transporte = ArquivoCSV(os.path.join(path_arquivo_transporte, nome_arquivo_transporte))
-        except Exception as e:
-            print('Erro ao obter as informações do usuário. Erro: {}'.format(str(e)))
+        tentativas = 0
+        while tentativas < 3:
+            try:
+                self.mensagem._enviaMensagem(self.mensagem.CONST_ARQUIVO) 
+                resposta_arquivo_pasta = self.mensagem._aguardaEscolha()
+                if (resposta_arquivo_pasta == 'Y') or (resposta_arquivo_pasta == 'y'):
+                    nome_arquivo_transporte = 'info_transportes'
+                    path_arquivo_transporte = os.getcwd()
+                    self.arquivo_transporte = ArquivoCSV(os.path.join(path_arquivo_transporte, nome_arquivo_transporte))
+                elif (resposta_arquivo_pasta == 'N') or (resposta_arquivo_pasta == 'n'):
+                    self.mensagem._enviaMensagem(self.mensagem.CONST_INICIO_DIARIO) 
+                    path_arquivo_transporte = self.mensagem._aguardaEscolha()
+                    self.mensagem._enviaMensagem(self.mensagem.CONST_NOME_ARQUIVO) 
+                    nome_arquivo_transporte = self.mensagem._aguardaEscolha()
+                    self.arquivo_transporte = ArquivoCSV(os.path.join(path_arquivo_transporte, nome_arquivo_transporte))
+                else:	
+                    self.mensagem._enviaMensagem(self.mensagem.YES_NO_QUESTION)
+            except Exception as e:
+                print('Erro ao obter as informações do usuário. Erro: {}'.format(str(e)))
+            finally:
+                if self.arquivo_transporte is not None:
+                    break
+                else:
+                    tentativas += 1
+                    if tentativas == 3:
+                        self.mensagem._enviaMensagem(self.mensagem.ENCERRANDO_PROGRAMA)
     
     def _gera_info_corridas_diarias(self):
         try:
             self.__obtem_informacoes_usuario()
-            if self.arquivo_transporte._existe_arquivo():
-                df_info_transporte = self.arquivo_transporte._ler_arquivo_csv_df()
-                info_corridas_dia = self.__processa_corridas_diarias(df_info_transporte)
-                arquivo_corridas_diarias = ArquivoCSV(os.path.join(self.arquivo_transporte.local_arquivo, 'info_corridas_do_dia'))
-                arquivo_corridas_diarias._gera_arquivo_csv(info_corridas_dia)
+            if self.arquivo_transporte is not None:
+                if self.arquivo_transporte._existe_arquivo():
+                    df_info_transporte = self.arquivo_transporte._ler_arquivo_csv_df()
+                    info_corridas_dia = self.__processa_corridas_diarias(df_info_transporte)
+                    arquivo_corridas_diarias = ArquivoCSV(os.path.join(self.arquivo_transporte.local_arquivo, 'info_corridas_do_dia'))
+                    arquivo_corridas_diarias._gera_arquivo_csv(info_corridas_dia)
+                    print('Arquivo info_corridas_do_dia gerado com sucesso.')
+                else:
+                    print('O arquivo {} não existe. Verificar se o arquivo realmente existe no local indicado.'.format(
+                        self.arquivo_transporte.path_arquivo))
             else:
-                print('O arquivo {} não existe. Verificar se o arquivo realmente existe no local indicado.'.format(
-                    self.arquivo_transporte.path_arquivo))
+                print('O arquivo não pode ser identificado. Reinicie o programa e verifique se o path e o nome arquivo a ser analisado estão corretos.')
         except Exception as e:
             print('Erro ao processar os dados para a corrida diária.')
