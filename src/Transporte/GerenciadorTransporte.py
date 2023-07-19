@@ -92,7 +92,5 @@ class GerenciadorTransporte():
                 else:
                     print('O arquivo {} não existe. Verificar se o arquivo realmente existe no local indicado.'.format(
                         self.arquivo_transporte.path_arquivo))
-            else:
-                print('O arquivo não pode ser identificado. Reinicie o programa e verifique se o path e o nome arquivo a ser analisado estão corretos.')
         except Exception as e:
             print('Erro ao processar os dados para a corrida diária. Erro: {}'.format(str(e)))
